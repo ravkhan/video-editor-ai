@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Video Editor AI</title>
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body>
+  <header class="topbar">
+    <a href="#/" class="logo"><span class="logo-mark">▶</span> Video Editor AI</a>
+    <span id="project-title" class="project-title"></span>
+    <span id="save-status" class="save-status"></span>
+  </header>
+
+  <!-- ============================================================ Projects -->
+  <main id="home-view" class="home" hidden>
+    <label id="dropzone" class="dropzone">
+      <input id="file-input" type="file" accept="video/*,.mkv,.avi,.mov" hidden>
+      <div class="dropzone-icon">⬆</div>
+      <div class="dropzone-title">Перетащите видео сюда или нажмите, чтобы выбрать</div>
+      <div class="dropzone-hint">MP4, MOV, MKV, WebM, AVI…</div>
+      <div id="upload-progress" class="progress" hidden><div class="progress-bar"></div><span></span></div>
+    </label>
+    <p id="upload-error" class="error" hidden></p>
+
+    <h2 class="section-title">Проекты</h2>
+    <div id="project-list" class="project-list"></div>
+    <p id="project-empty" class="muted" hidden>Пока нет проектов — загрузите первое видео.</p>
+  </main>
+
+  <!-- ============================================================== Editor -->
+  <main id="editor-view" class="editor" hidden>
+    <section class="player-col">
+      <div id="stage-box" class="stage-box">
+        <div id="stage" class="stage">
+          <video id="video" playsinline preload="metadata"></video>
+          <div id="caption" class="caption"></div>
+          <div id="stage-overlay" class="stage-overlay" hidden></div>
+        </div>
+      </div>
+
+      <div class="transport">
+        <button id="play-btn" class="icon-btn" title="Воспроизведение (пробел)">▶</button>
+        <span id="time-display" class="time">0:00.000 / 0:00.000</span>
+        <button id="add-cue-btn" class="btn btn-small" title="Добавить субтитр в текущей позиции">+ Субтитр здесь</button>
+      </div>
+
+      <div id="timeline" class="timeline" title="Нажмите, чтобы перейти">
+        <div id="timeline-cues" class="timeline-cues"></div>
+        <div id="playhead" class="playhead"></div>
+      </div>
+      <p class="hint">Пробел — пауза, ← / → — перемотка на 2 с, Alt+Enter в тексте — разделить субтитр в позиции курсора.</p>
+    </section>
+
+    <aside class="side-col">
+      <nav class="tabs">
+        <button data-tab="segments" class="tab active">Субтитры</button>
+        <button data-tab="transcribe" class="tab">Распознавание</button>
+        <button data-tab="style" class="tab">Стиль</button>
+        <button data-tab="export" class="tab">Экспорт</button>
+      </nav>
+
+      <!-- Segments -->
+      <div data-panel="segments" class="panel">
+        <div class="toolbar">
+          <span id="segment-count" class="muted"></span>
+          <span class="spacer"></span>
+          <label class="btn btn-small btn-ghost" title="Загрузить существующие субтитры">
+            Импорт SRT/VTT <input id="import-input" type="file" accept=".srt,.vtt" hidden>
+          </label>
+          <button id="shift-btn" class="btn btn-small btn-ghost" title="Сдвинуть все субтитры по времени">Сдвиг…</button>
+        </div>
+        <div id="segment-empty" class="empty" hidden>
+          <p>Субтитров пока нет.</p>
+          <button class="btn" data-goto-tab="transcribe">Распознать речь автоматически</button>
+        </div>
+        <div id="segment-list" class="segment-list"></div>
+      </div>
+
+      <!-- Transcribe -->
+      <div data-panel="transcribe" class="panel" hidden>
+        <form id="transcribe-form" class="form">
+          <label>Модель Whisper
+            <select name="model" id="model-select"></select>
+            <small>tiny/base — быстро, small — баланс, medium/large-v3 — точнее, но медленнее.</small>
+          </label>
+          <label>Язык речи
+            <select name="language">
+              <option value="">Определить автоматически</option>
+              <option value="ru">Русский</option>
+              <option value="en">English</option>
+              <option value="uk">Українська</option>
+              <option value="kk">Қазақша</option>
+              <option value="uz">Oʻzbekcha</option>
+              <option value="ar">العربية</option>
+              <option value="tr">Türkçe</option>
+              <option value="de">Deutsch</option>
+              <option value="fr">Français</option>
+              <option value="es">Español</option>
+              <option value="it">Italiano</option>
+              <option value="zh">中文</option>
+              <option value="ja">日本語</option>
+            </select>
+          </label>
+          <label>Задача
+            <select name="task">
+              <option value="transcribe">Расшифровка на языке оригинала</option>
+              <option value="translate">Перевод на английский</option>
+            </select>
+          </label>
+          <div class="row">
+            <label>Макс. символов в субтитре
+              <input type="number" name="max_chars" value="84" min="10" max="200">
+            </label>
+            <label>Макс. символов в строке
+              <input type="number" name="max_line" value="42" min="10" max="100">
+            </label>
+          </div>
+          <button type="submit" class="btn btn-primary" id="transcribe-btn">Распознать речь</button>
+          <p class="muted small">Первый запуск модели скачивает её веса — это может занять несколько минут.</p>
+        </form>
+        <div id="transcribe-status" class="job-status" hidden></div>
+      </div>
+
+      <!-- Style -->
+      <div data-panel="style" class="panel" hidden>
+        <form id="style-form" class="form">
+          <label>Шрифт <select name="font" id="font-select"></select></label>
+          <div class="row">
+            <label>Размер <input type="range" name="size" min="16" max="140" step="1"><output data-for="size"></output></label>
+            <label class="check"><input type="checkbox" name="bold"> Жирный</label>
+          </div>
+          <div class="row">
+            <label>Цвет текста <input type="color" name="color"></label>
+            <label>Позиция
+              <select name="position">
+                <option value="bottom">Снизу</option>
+                <option value="middle">По центру</option>
+                <option value="top">Сверху</option>
+              </select>
+            </label>
+          </div>
+          <label>Отступ от края <input type="range" name="margin" min="0" max="400" step="1"><output data-for="margin"></output></label>
+          <fieldset>
+            <legend><label class="check"><input type="checkbox" name="box"> Подложка под текстом</label></legend>
+            <div class="row" data-when="box">
+              <label>Цвет подложки <input type="color" name="box_color"></label>
+              <label>Непрозрачность <input type="range" name="box_opacity" min="0" max="1" step="0.05"><output data-for="box_opacity"></output></label>
+            </div>
+            <div class="row" data-when="!box">
+              <label>Цвет обводки <input type="color" name="outline_color"></label>
+              <label>Толщина обводки <input type="range" name="outline" min="0" max="12" step="0.5"><output data-for="outline"></output></label>
+            </div>
+          </fieldset>
+          <button type="button" id="style-reset" class="btn btn-ghost btn-small">Сбросить стиль</button>
+        </form>
+        <p class="muted small">Предпросмотр в плеере приблизителен; итоговый вид — после вшивания.</p>
+      </div>
+
+      <!-- Export -->
+      <div data-panel="export" class="panel" hidden>
+        <h3>Файлы субтитров</h3>
+        <div class="export-links">
+          <a class="btn" id="dl-srt" download>SRT</a>
+          <a class="btn" id="dl-vtt" download>WebVTT</a>
+          <a class="btn" id="dl-ass" download>ASS (со стилем)</a>
+        </div>
+        <h3>Видео со вшитыми субтитрами</h3>
+        <p class="muted small">Субтитры и стиль впечатываются в кадр (H.264 + AAC, MP4).</p>
+        <button id="render-btn" class="btn btn-primary">Вшить субтитры в видео</button>
+        <div id="render-status" class="job-status" hidden></div>
+        <a id="render-download" class="btn" hidden download>⬇ Скачать видео</a>
+      </div>
+    </aside>
+  </main>
+
+  <div id="toast" class="toast" hidden></div>
+  <script src="/app.js"></script>
+</body>
+</html>
