@@ -132,7 +132,7 @@ for i, (src, s, e, kind, _, lines) in enumerate(CLIPS):
                     else:
                         parts.append(ww)
                 pop = r"{\fad(0,0)}" if k else r"{\t(0,90,\fscx106\fscy106)\t(90,180,\fscx100\fscy100)}"
-                end = we if k < len(ch) - 1 else ce + 0.15
+                end = we
                 ass.append(f"Dialogue: 0,{ts(base + ws)},{ts(base + end)},Sub,,0,0,0,,{pop}{' '.join(parts)}")
 
 # titles
