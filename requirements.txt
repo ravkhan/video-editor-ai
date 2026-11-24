@@ -1,0 +1,7 @@
+# Устанавливается автоматически через ./setup.sh
+# torch ставится отдельно в CPU-версии (без CUDA), см. setup.sh
+openai-whisper==20250625
+auto-editor==29.3.1
+scenedetect[opencv-headless]==0.7.3
+numpy
+gdown==6.5.2

@@ -1,0 +1,11 @@
+.venv/
+models/
+__pycache__/
+*.pyc
+# видео и результаты не хранятся в git (слишком большие)
+input/*
+output/*
+subtitles/*
+music/*
+previews/*
+!*/.gitkeep
